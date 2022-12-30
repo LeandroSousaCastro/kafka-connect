@@ -1,0 +1,55 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+AddRelTag("async", $lineStyle = DashedLine())
+AddElementTag("broker", $fontColor=$ELEMENT_FONT_COLOR, $bgColor="#335DA5", $shape=EightSidedShape(), $legendText="backend container (eight sided)")
+
+title "Notification Process System"
+
+System_Ext(external_systems, "External Systems", "Parceiros DF")
+
+System_Boundary(df_system, "Doutor Finanças - Sistema de notificações de mudanças em processos.") {
+    Boundary(teste, "Sistema Monolítico", "DF") {
+        Person(client, "Doutores", "Usuários da clinica")
+        Container(frontend_clinic, "Frontend da Clinica", "Angular", "Aplicação Web da Clinica")
+        Container(backend_clinic, "Backend da Clinica", "PHP - Slim")
+        ContainerDb(clinic_database, "Database", "MYSQL", "DB Atual da clínica.")
+    }
+
+    Boundary(others_boundary, "Outros contextos", "DF") {
+        Container(others_systens, "Outros serviços DF", "Outros microserviços DF")
+    }
+
+    Boundary(topic_system, "Topic system", "DF") {
+        Container(kafka_connect, "Kafka Connect", "Source")
+        Container(broker, "Broker Topics", "Kafka", "Provides data streaming", $tags="broker")
+    }
+
+    Boundary(process_context, "Contexto de Processos", "DF") {
+        Container(api_process_services, "API Process Services", "Krakend")
+    }
+
+    Boundary(notification_context, "Auxiliar", "DF") {
+        ContainerDb(database, "Database", "MYSQL", "Notifaction Service DB")
+        Container(notification_services, "Notifaction Service", "Laravel", "Serviço de notificações DF")
+    }
+}
+
+
+Rel(client, frontend_clinic, "Users", "HTTPS")
+
+Rel(frontend_clinic, backend_clinic, "Back For Front", "HTTPS")
+
+Rel(api_process_services, backend_clinic, "Api", "HTTPS")
+
+Rel(external_systems, api_process_services, "Api", "HTTPS")
+Rel(external_systems, notification_services, "Api", "HTTPS")
+
+Rel(kafka_connect, broker, "Api", "HTTPS")
+Rel(kafka_connect, clinic_database, "Api", "HTTPS")
+Rel(others_systens, broker, "Api", "HTTPS")
+Rel(notification_services, broker, "Api", "HTTPS")
+
+Rel(database, notification_services, "Reads from and writes to", "MySQL Driver")
+Rel(backend_clinic, clinic_database, "Reads from and writes to", "MySQL Driver")
+
+@enduml
